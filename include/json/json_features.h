@@ -11,7 +11,7 @@
 #endif // if !defined(JSON_IS_AMALGAMATION)
 
 #pragma pack(push, 8)
-
+namespace Futures{
 namespace Json {
 
 /** \brief Configuration passed to reader and writer.
@@ -36,6 +36,8 @@ public:
    */
   static Features strictMode();
 
+  static Features myMode();
+
   /** \brief Initialize the configuration like JsonConfig::allFeatures;
    */
   Features();
@@ -55,7 +57,7 @@ public:
 };
 
 } // namespace Json
-
+}
 #pragma pack(pop)
 
 #endif // JSON_FEATURES_H_INCLUDED

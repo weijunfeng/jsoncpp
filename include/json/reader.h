@@ -24,7 +24,7 @@
 #endif // if defined(JSONCPP_DISABLE_DLL_INTERFACE_WARNING)
 
 #pragma pack(push, 8)
-
+namespace Futures{
 namespace Json {
 
 /** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
@@ -96,7 +96,7 @@ public:
              bool collectComments = true);
 
   /// \brief Parse from input stream.
-  /// \see Json::operator>>(std::istream&, Json::Value&).
+  /// \see Futures::Json::operator>>(std::istream&, Futures::Json::Value&).
   bool parse(IStream& is, Value& root, bool collectComments = true);
 
   /** \brief Returns a user friendly string that list errors in the parsed
@@ -287,7 +287,7 @@ public:
  */
 class JSON_API CharReaderBuilder : public CharReader::Factory {
 public:
-  // Note: We use a Json::Value so that we can add data-members to this class
+  // Note: We use a Futures::Json::Value so that we can add data-members to this class
   // without a major version bump.
   /** Configuration of this builder.
    * These are case-sensitive.
@@ -331,7 +331,7 @@ public:
    * write and read them just like any JSON Value.
    * \sa setDefaults()
    */
-  Json::Value settings_;
+  Futures::Json::Value settings_;
 
   CharReaderBuilder();
   ~CharReaderBuilder() override;
@@ -341,24 +341,24 @@ public:
   /** \return true if 'settings' are legal and consistent;
    *   otherwise, indicate bad settings via 'invalid'.
    */
-  bool validate(Json::Value* invalid) const;
+  bool validate(Futures::Json::Value* invalid) const;
 
   /** A simple way to update a specific setting.
    */
   Value& operator[](const String& key);
 
   /** Called by ctor, but you can use this to reset settings_.
-   * \pre 'settings' != NULL (but Json::null is fine)
+   * \pre 'settings' != NULL (but Futures::Json::null is fine)
    * \remark Defaults:
    * \snippet src/lib_json/json_reader.cpp CharReaderBuilderDefaults
    */
-  static void setDefaults(Json::Value* settings);
+  static void setDefaults(Futures::Json::Value* settings);
   /** Same as old Features::strictMode().
-   * \pre 'settings' != NULL (but Json::null is fine)
+   * \pre 'settings' != NULL (but Futures::Json::null is fine)
    * \remark Defaults:
    * \snippet src/lib_json/json_reader.cpp CharReaderBuilderStrictMode
    */
-  static void strictMode(Json::Value* settings);
+  static void strictMode(Futures::Json::Value* settings);
 };
 
 /** Consume entire stream and use its begin/end.
@@ -375,7 +375,7 @@ bool JSON_API parseFromStream(CharReader::Factory const&, IStream&, Value* root,
  * This can be used to read a file into a particular sub-object.
  * For example:
  *   \code
- *   Json::Value root;
+ *   Futures::Json::Value root;
  *   cin >> root["dir"]["file"];
  *   cout << root;
  *   \endcode
@@ -390,12 +390,12 @@ bool JSON_API parseFromStream(CharReader::Factory const&, IStream&, Value* root,
  * }
  * \endverbatim
  * \throw std::exception on parse error.
- * \see Json::operator<<()
+ * \see Futures::Json::operator<<()
  */
 JSON_API IStream& operator>>(IStream&, Value&);
 
 } // namespace Json
-
+}
 #pragma pack(pop)
 
 #if defined(JSONCPP_DISABLE_DLL_INTERFACE_WARNING)

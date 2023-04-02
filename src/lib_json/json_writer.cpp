@@ -82,7 +82,7 @@
 // Disable warning about strdup being deprecated.
 #pragma warning(disable : 4996)
 #endif
-
+namespace Futures{
 namespace Json {
 
 #if __cplusplus >= 201103L || (defined(_CPPLIB_VER) && _CPPLIB_VER >= 520)
@@ -115,16 +115,29 @@ String valueToString(LargestUInt value) {
   return current;
 }
 
+String valueToQuotedString(LargestInt value) {
+    return "\"" + valueToString(value) + "\"";
+}
+String valueToQuotedString(LargestUInt value) {
+    return "\"" + valueToString(value) + "\"";
+}
 #if defined(JSON_HAS_INT64)
 
 String valueToString(Int value) { return valueToString(LargestInt(value)); }
 
 String valueToString(UInt value) { return valueToString(LargestUInt(value)); }
 
+String valueToQuotedString(Int value) {
+    return "\"" + valueToString(value) + "\"";
+}
+String valueToQuotedString(UInt value) {
+    return "\"" + valueToString(value) + "\"";
+}
+
 #endif // # if defined(JSON_HAS_INT64)
 
 namespace {
-String valueToString(double value, bool useSpecialFloats,
+String valueToStringBak(double value, bool useSpecialFloats,
                      unsigned int precision, PrecisionType precisionType) {
   // Print into the buffer. We need not request the alternative representation
   // that always has a decimal point because JSON doesn't distinguish the
@@ -168,11 +181,68 @@ String valueToString(double value, bool useSpecialFloats,
 
   return buffer;
 }
+
+/**
+ * double转字符串，支持处理double精度问题，及移除double小数点后多余的0，0.0返回0，5.0100返回5.01
+ */
+std::string valueToString2(double value ){
+    if (!isfinite(value)) {
+        return "";
+    }
+  char buffer[32];
+  sprintf(buffer, "%lf", value);// 去除科学记数方式
+  char* ch = buffer + strlen(buffer) - 1;
+  if (*ch != '0') return buffer; // nothing to truncate, so save time
+  while(ch > buffer && *ch == '0'){
+    --ch;
+  }
+  char* last_nonzero = ch;
+  while(ch >= buffer){
+    switch(*ch){
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        --ch;
+            continue;
+      case '.':
+        // Truncate zeroes to save bytes in output, but keep one.
+        if (*last_nonzero == '.') {
+          *(last_nonzero) = '\0';
+        }else{
+          *(last_nonzero + 1) = '\0';
+        }
+            return buffer;
+      default:
+        return buffer;
+    }
+  }
+  return buffer;
+}
+String valueToString(double value, bool useSpecialFloats,
+                     unsigned int precision, PrecisionType precisionType) {
+    return valueToString2(value);
+}
 } // namespace
 
 String valueToString(double value, unsigned int precision,
                      PrecisionType precisionType) {
   return valueToString(value, false, precision, precisionType);
+}
+
+String valueToQuotedString(double value, bool useSpecialFloats,
+                          unsigned int precision, PrecisionType precisionType) {
+    return "\"" + valueToString(value, useSpecialFloats, precision, precisionType) + "\"";
+}
+
+String valueToQuotedString(double value) {
+    return "\"" + valueToString(value) + "\"";
 }
 
 String valueToString(bool value) { return value ? "true" : "false"; }
@@ -385,13 +455,13 @@ void FastWriter::writeValue(const Value& value) {
       document_ += "null";
     break;
   case intValue:
-    document_ += valueToString(value.asLargestInt());
+    document_ += valueToQuotedString(value.asLargestInt());
     break;
   case uintValue:
-    document_ += valueToString(value.asLargestUInt());
+    document_ += valueToQuotedString(value.asLargestUInt());
     break;
   case realValue:
-    document_ += valueToString(value.asDouble());
+    document_ += valueToQuotedString(value.asDouble());
     break;
   case stringValue: {
     // Is NULL possible for value.string_? No.
@@ -453,13 +523,13 @@ void StyledWriter::writeValue(const Value& value) {
     pushValue("null");
     break;
   case intValue:
-    pushValue(valueToString(value.asLargestInt()));
+    pushValue(valueToQuotedString(value.asLargestInt()));
     break;
   case uintValue:
-    pushValue(valueToString(value.asLargestUInt()));
+    pushValue(valueToQuotedString(value.asLargestUInt()));
     break;
   case realValue:
-    pushValue(valueToString(value.asDouble()));
+    pushValue(valueToQuotedString(value.asDouble()));
     break;
   case stringValue: {
     // Is NULL possible for value.string_? No.
@@ -671,13 +741,13 @@ void StyledStreamWriter::writeValue(const Value& value) {
     pushValue("null");
     break;
   case intValue:
-    pushValue(valueToString(value.asLargestInt()));
+    pushValue(valueToQuotedString(value.asLargestInt()));
     break;
   case uintValue:
-    pushValue(valueToString(value.asLargestUInt()));
+    pushValue(valueToQuotedString(value.asLargestUInt()));
     break;
   case realValue:
-    pushValue(valueToString(value.asDouble()));
+    pushValue(valueToQuotedString(value.asDouble()));
     break;
   case stringValue: {
     // Is NULL possible for value.string_? No.
@@ -944,13 +1014,13 @@ void BuiltStyledStreamWriter::writeValue(Value const& value) {
     pushValue(nullSymbol_);
     break;
   case intValue:
-    pushValue(valueToString(value.asLargestInt()));
+    pushValue(valueToQuotedString(value.asLargestInt()));
     break;
   case uintValue:
-    pushValue(valueToString(value.asLargestUInt()));
+    pushValue(valueToQuotedString(value.asLargestUInt()));
     break;
   case realValue:
-    pushValue(valueToString(value.asDouble(), useSpecialFloats_, precision_,
+    pushValue(valueToQuotedString(value.asDouble(), useSpecialFloats_, precision_,
                             precisionType_));
     break;
   case stringValue: {
@@ -1202,7 +1272,7 @@ StreamWriter* StreamWriterBuilder::newStreamWriter() const {
                                      precisionType);
 }
 
-bool StreamWriterBuilder::validate(Json::Value* invalid) const {
+bool StreamWriterBuilder::validate(Futures::Json::Value* invalid) const {
   static const auto& valid_keys = *new std::set<String>{
       "indentation",
       "commentStyle",
@@ -1229,7 +1299,7 @@ Value& StreamWriterBuilder::operator[](const String& key) {
   return settings_[key];
 }
 // static
-void StreamWriterBuilder::setDefaults(Json::Value* settings) {
+void StreamWriterBuilder::setDefaults(Futures::Json::Value* settings) {
   //! [StreamWriterBuilderDefaults]
   (*settings)["commentStyle"] = "All";
   (*settings)["indentation"] = "\t";
@@ -1257,3 +1327,4 @@ OStream& operator<<(OStream& sout, Value const& root) {
 }
 
 } // namespace Json
+}
