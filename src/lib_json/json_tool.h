@@ -24,7 +24,7 @@
  *
  * It is an internal header that must not be exposed.
  */
-
+namespace Futures{
 namespace Json {
 static inline char getDecimalPoint() {
 #ifdef JSONCPP_NO_LOCALE_SUPPORT
@@ -134,5 +134,5 @@ Iter fixZerosInTheEnd(Iter begin, Iter end, unsigned int precision) {
 }
 
 } // namespace Json
-
+}
 #endif // LIB_JSONCPP_JSON_TOOL_H_INCLUDED

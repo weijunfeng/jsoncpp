@@ -12,6 +12,7 @@
 #pragma pack(push)
 #pragma pack()
 
+namespace Futures{
 namespace Json {
 template <typename T> class SecureAllocator {
 public:
@@ -83,7 +84,7 @@ bool operator!=(const SecureAllocator<T>&, const SecureAllocator<U>&) {
 }
 
 } // namespace Json
-
+}
 #pragma pack(pop)
 
 #endif // JSON_ALLOCATOR_H_INCLUDED

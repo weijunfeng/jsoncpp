@@ -58,6 +58,7 @@
 
 /** \brief JSON (JavaScript Object Notation).
  */
+namespace Futures{
 namespace Json {
 
 #if JSON_USE_EXCEPTION
@@ -79,7 +80,7 @@ protected:
  *
  * E.g. out-of-memory (when we use malloc), stack-overflow, malicious input
  *
- * \remark derived from Json::Exception
+ * \remark derived from Futures::Json::Exception
  */
 class JSON_API RuntimeError : public Exception {
 public:
@@ -90,7 +91,7 @@ public:
  *
  * These are precondition-violations (user bugs) and internal errors (our bugs).
  *
- * \remark derived from Json::Exception
+ * \remark derived from Futures::Json::Exception
  */
 class JSON_API LogicError : public Exception {
 public:
@@ -139,8 +140,8 @@ enum PrecisionType {
  *
  * Example of usage:
  * \code
- * Json::Value aValue( StaticString("some text") );
- * Json::Value object;
+ * Futures::Json::Value aValue( StaticString("some text") );
+ * Futures::Json::Value object;
  * static const StaticString code("code");
  * object[code] = 1234;
  * \endcode
@@ -198,15 +199,15 @@ public:
   using Members = std::vector<String>;
   using iterator = ValueIterator;
   using const_iterator = ValueConstIterator;
-  using UInt = Json::UInt;
-  using Int = Json::Int;
+  using UInt = Futures::Json::UInt;
+  using Int = Futures::Json::Int;
 #if defined(JSON_HAS_INT64)
-  using UInt64 = Json::UInt64;
-  using Int64 = Json::Int64;
+  using UInt64 = Futures::Json::UInt64;
+  using Int64 = Futures::Json::Int64;
 #endif // defined(JSON_HAS_INT64)
-  using LargestInt = Json::LargestInt;
-  using LargestUInt = Json::LargestUInt;
-  using ArrayIndex = Json::ArrayIndex;
+  using LargestInt = Futures::Json::LargestInt;
+  using LargestUInt = Futures::Json::LargestUInt;
+  using ArrayIndex = Futures::Json::ArrayIndex;
 
   // Required for boost integration, e. g. BOOST_TEST
   using value_type = std::string;
@@ -220,27 +221,27 @@ public:
   // null and nullRef are deprecated, use this instead.
   static Value const& nullSingleton();
 
-  /// Minimum signed integer value that can be stored in a Json::Value.
+  /// Minimum signed integer value that can be stored in a Futures::Json::Value.
   static constexpr LargestInt minLargestInt =
       LargestInt(~(LargestUInt(-1) / 2));
-  /// Maximum signed integer value that can be stored in a Json::Value.
+  /// Maximum signed integer value that can be stored in a Futures::Json::Value.
   static constexpr LargestInt maxLargestInt = LargestInt(LargestUInt(-1) / 2);
-  /// Maximum unsigned integer value that can be stored in a Json::Value.
+  /// Maximum unsigned integer value that can be stored in a Futures::Json::Value.
   static constexpr LargestUInt maxLargestUInt = LargestUInt(-1);
 
-  /// Minimum signed int value that can be stored in a Json::Value.
+  /// Minimum signed int value that can be stored in a Futures::Json::Value.
   static constexpr Int minInt = Int(~(UInt(-1) / 2));
-  /// Maximum signed int value that can be stored in a Json::Value.
+  /// Maximum signed int value that can be stored in a Futures::Json::Value.
   static constexpr Int maxInt = Int(UInt(-1) / 2);
-  /// Maximum unsigned int value that can be stored in a Json::Value.
+  /// Maximum unsigned int value that can be stored in a Futures::Json::Value.
   static constexpr UInt maxUInt = UInt(-1);
 
 #if defined(JSON_HAS_INT64)
-  /// Minimum signed 64 bits int value that can be stored in a Json::Value.
+  /// Minimum signed 64 bits int value that can be stored in a Futures::Json::Value.
   static constexpr Int64 minInt64 = Int64(~(UInt64(-1) / 2));
-  /// Maximum signed 64 bits int value that can be stored in a Json::Value.
+  /// Maximum signed 64 bits int value that can be stored in a Futures::Json::Value.
   static constexpr Int64 maxInt64 = Int64(UInt64(-1) / 2);
-  /// Maximum unsigned 64 bits int value that can be stored in a Json::Value.
+  /// Maximum unsigned 64 bits int value that can be stored in a Futures::Json::Value.
   static constexpr UInt64 maxUInt64 = UInt64(-1);
 #endif // defined(JSON_HAS_INT64)
   /// Default precision for real value for string representation.
@@ -308,9 +309,9 @@ public:
    *
    * Examples:
    *   \code
-   *   Json::Value null_value; // null
-   *   Json::Value arr_value(Json::arrayValue); // []
-   *   Json::Value obj_value(Json::objectValue); // {}
+   *   Futures::Json::Value null_value; // null
+   *   Futures::Json::Value arr_value(Futures::Json::arrayValue); // []
+   *   Futures::Json::Value obj_value(Futures::Json::objectValue); // {}
    *   \endcode
    */
   Value(ValueType type = nullValue);
@@ -337,7 +338,7 @@ public:
    * Example of usage:
    *   \code
    *   static StaticString foo("some text");
-   *   Json::Value aValue(foo);
+   *   Futures::Json::Value aValue(foo);
    *   \endcode
    */
   Value(const StaticString& value);
@@ -491,12 +492,27 @@ public:
    * store the new entry is not duplicated.
    * Example of use:
    *   \code
-   *   Json::Value object;
+   *   Futures::Json::Value object;
    *   static const StaticString code("code");
    *   object[code] = 1234;
    *   \endcode
    */
   Value& operator[](const StaticString& key);
+
+  std::string getString(const char *key, const Value &defaultValue) const;
+
+  bool getBool(const char *key, const bool &defaultValue) const;
+
+  double getDouble(const char *key, const double &defaultValue) const;
+
+  int getInt(const char *key, const Value::Int &defaultValue) const;
+
+  unsigned int getUInt(const char *key, const Value::UInt &defaultValue) const;
+
+  uint64_t getUInt64(const char *key, const Value::UInt64 &defaultValue) const;
+
+  int64_t getInt64(const char *key, const Value::Int64 &defaultValue) const;
+
   /// Return the member named key if it exist, defaultValue otherwise.
   /// \note deep copy
   Value get(const char* key, const Value& defaultValue) const;
@@ -578,6 +594,8 @@ public:
   String getComment(CommentPlacement placement) const;
 
   String toStyledString() const;
+
+  String toFastString() const;
 
   const_iterator begin() const;
   const_iterator end() const;
@@ -926,7 +944,7 @@ public:
 inline void swap(Value& a, Value& b) { a.swap(b); }
 
 } // namespace Json
-
+}
 #pragma pack(pop)
 
 #if defined(JSONCPP_DISABLE_DLL_INTERFACE_WARNING)

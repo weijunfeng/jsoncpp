@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <utility>
 
@@ -46,7 +47,7 @@ int JSON_API msvc_pre1900_c99_snprintf(char* outBuf, size_t size,
 #endif
 
 #define JSON_ASSERT_UNREACHABLE assert(false)
-
+namespace Futures{
 namespace Json {
 template <typename T>
 static std::unique_ptr<T> cloneUnique(const std::unique_ptr<T>& p) {
@@ -90,7 +91,7 @@ static inline bool InRange(double d, T min, U max) {
   return d >= static_cast<double>(min) && d <= static_cast<double>(max);
 }
 #else  // if !defined(JSON_USE_INT64_DOUBLE_CONVERSION)
-static inline double integerToDouble(Json::UInt64 value) {
+static inline double integerToDouble(Futures::Json::UInt64 value) {
   return static_cast<double>(Int64(value / 2)) * 2.0 +
          static_cast<double>(Int64(value & 1));
 }
@@ -120,7 +121,7 @@ static inline char* duplicateStringValue(const char* value, size_t length) {
 
   auto newString = static_cast<char*>(malloc(length + 1));
   if (newString == nullptr) {
-    throwRuntimeError("in Json::Value::duplicateStringValue(): "
+    throwRuntimeError("in Futures::Json::Value::duplicateStringValue(): "
                       "Failed to allocate string value buffer");
   }
   memcpy(newString, value, length);
@@ -136,12 +137,12 @@ static inline char* duplicateAndPrefixStringValue(const char* value,
   // to a sane value.
   JSON_ASSERT_MESSAGE(length <= static_cast<unsigned>(Value::maxInt) -
                                     sizeof(unsigned) - 1U,
-                      "in Json::Value::duplicateAndPrefixStringValue(): "
+                      "in Futures::Json::Value::duplicateAndPrefixStringValue(): "
                       "length too big for prefixing");
   size_t actualLength = sizeof(length) + length + 1;
   auto newString = static_cast<char*>(malloc(actualLength));
   if (newString == nullptr) {
-    throwRuntimeError("in Json::Value::duplicateAndPrefixStringValue(): "
+    throwRuntimeError("in Futures::Json::Value::duplicateAndPrefixStringValue(): "
                       "Failed to allocate string value buffer");
   }
   *reinterpret_cast<unsigned*>(newString) = length;
@@ -184,7 +185,7 @@ static inline void releaseStringValue(char* value, unsigned) { free(value); }
 #endif // JSONCPP_USING_SECURE_MEMORY
 
 } // namespace Json
-
+}
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -196,7 +197,7 @@ static inline void releaseStringValue(char* value, unsigned) { free(value); }
 
 #include "json_valueiterator.inl"
 #endif // if !defined(JSON_IS_AMALGAMATION)
-
+namespace Futures{
 namespace Json {
 
 #if JSON_USE_EXCEPTION
@@ -589,7 +590,7 @@ bool Value::operator!=(const Value& other) const { return !(*this == other); }
 
 const char* Value::asCString() const {
   JSON_ASSERT_MESSAGE(type() == stringValue,
-                      "in Json::Value::asCString(): requires stringValue");
+                      "in Futures::Json::Value::asCString(): requires stringValue");
   if (value_.string_ == nullptr)
     return nullptr;
   unsigned this_len;
@@ -602,7 +603,7 @@ const char* Value::asCString() const {
 #if JSONCPP_USING_SECURE_MEMORY
 unsigned Value::getCStringLength() const {
   JSON_ASSERT_MESSAGE(type() == stringValue,
-                      "in Json::Value::asCString(): requires stringValue");
+                      "in Futures::Json::Value::asCString(): requires stringValue");
   if (value_.string_ == 0)
     return 0;
   unsigned this_len;
@@ -667,6 +668,24 @@ Value::Int Value::asInt() const {
     return 0;
   case booleanValue:
     return value_.bool_ ? 1 : 0;
+  case stringValue:
+    try {
+      auto str = this->asString();
+      if (!str.empty()) {
+        size_t pos;
+        double strToDouble = std::stod(str, &pos);
+        if (pos == str.length()) {
+          // str全为double数字
+          int strToInt = std::stoi(str);
+          if (strToInt == strToDouble) {
+            // int值和double值相同，则str可转为int值
+            return strToInt;
+          }
+        }
+      }
+    }
+    catch (const std::exception &e) {
+    }
   default:
     break;
   }
@@ -689,6 +708,24 @@ Value::UInt Value::asUInt() const {
     return 0;
   case booleanValue:
     return value_.bool_ ? 1 : 0;
+  case stringValue:
+    try {
+      auto str = this->asString();
+      if (!str.empty()) {
+        size_t pos;
+        double strToDouble = std::stod(str, &pos);
+        if (pos == str.length()) {
+          // str全为double数字
+          int strToInt = std::stoi(str);
+          if (strToInt >= 0 && strToInt == strToDouble) {
+            // int值和double值相同，则str可转为int值
+            return strToInt;
+          }
+        }
+      }
+    }
+    catch (const std::exception &e) {
+    }
   default:
     break;
   }
@@ -712,6 +749,19 @@ Value::Int64 Value::asInt64() const {
     return 0;
   case booleanValue:
     return value_.bool_ ? 1 : 0;
+  case stringValue:
+    try {
+      auto str = this->asString();
+      if (!str.empty()) {
+        size_t pos;
+        int64_t strToInt = std::stoll(str, &pos);
+        if (pos == str.length()) {
+          return strToInt;
+        }
+      }
+    }
+    catch (const std::exception &e) {
+    }
   default:
     break;
   }
@@ -733,6 +783,19 @@ Value::UInt64 Value::asUInt64() const {
     return 0;
   case booleanValue:
     return value_.bool_ ? 1 : 0;
+  case stringValue:
+    try {
+      auto str = this->asString();
+      if (!str.empty()) {
+        size_t pos;
+        uint64_t strToInt = std::stoull(str, &pos);
+        if (pos == str.length()) {
+          return strToInt;
+        }
+      }
+    }
+    catch (const std::exception &e) {
+    }
   default:
     break;
   }
@@ -772,6 +835,20 @@ double Value::asDouble() const {
     return 0.0;
   case booleanValue:
     return value_.bool_ ? 1.0 : 0.0;
+  case stringValue:
+    try {
+      auto str = this->asString();
+      if (!str.empty()) {
+        size_t pos;
+        double strToDouble = std::stod(str, &pos);
+        if (pos == str.length()) {
+          // str全为double数字
+          return strToDouble;
+        }
+      }
+    }
+    catch (const std::exception &e) {
+    }
   default:
     break;
   }
@@ -795,6 +872,20 @@ float Value::asFloat() const {
     return 0.0;
   case booleanValue:
     return value_.bool_ ? 1.0F : 0.0F;
+  case stringValue:
+    try {
+      auto str = this->asString();
+      if (!str.empty()) {
+        size_t pos;
+        float strToDouble = std::stof(str, &pos);
+        if (pos == str.length()) {
+          // str全为double数字
+          return strToDouble;
+        }
+      }
+    }
+    catch (const std::exception &e) {
+    }
   default:
     break;
   }
@@ -815,6 +906,10 @@ bool Value::asBool() const {
     // According to JavaScript language zero or NaN is regarded as false
     const auto value_classification = std::fpclassify(value_.real_);
     return value_classification != FP_ZERO && value_classification != FP_NAN;
+  }
+  case stringValue:{
+    auto value = this->asString();
+    return (!value.empty() && value.c_str()[0] != 0);
   }
   default:
     break;
@@ -880,9 +975,13 @@ ArrayIndex Value::size() const {
 }
 
 bool Value::empty() const {
-  if (isNull() || isArray() || isObject())
+  if (isNull() || isArray() || isObject()) {
     return size() == 0U;
-  return false;
+  } else if (isString()) {
+    return asString().empty();
+  } else {
+    return false;
+  }
 }
 
 Value::operator bool() const { return !isNull(); }
@@ -890,7 +989,7 @@ Value::operator bool() const { return !isNull(); }
 void Value::clear() {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == arrayValue ||
                           type() == objectValue,
-                      "in Json::Value::clear(): requires complex value");
+                      "in Futures::Json::Value::clear(): requires complex value");
   start_ = 0;
   limit_ = 0;
   switch (type()) {
@@ -905,7 +1004,7 @@ void Value::clear() {
 
 void Value::resize(ArrayIndex newSize) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == arrayValue,
-                      "in Json::Value::resize(): requires arrayValue");
+                      "in Futures::Json::Value::resize(): requires arrayValue");
   if (type() == nullValue)
     *this = Value(arrayValue);
   ArrayIndex oldSize = size();
@@ -925,7 +1024,7 @@ void Value::resize(ArrayIndex newSize) {
 Value& Value::operator[](ArrayIndex index) {
   JSON_ASSERT_MESSAGE(
       type() == nullValue || type() == arrayValue,
-      "in Json::Value::operator[](ArrayIndex): requires arrayValue");
+      "in Futures::Json::Value::operator[](ArrayIndex): requires arrayValue");
   if (type() == nullValue)
     *this = Value(arrayValue);
   CZString key(index);
@@ -941,14 +1040,14 @@ Value& Value::operator[](ArrayIndex index) {
 Value& Value::operator[](int index) {
   JSON_ASSERT_MESSAGE(
       index >= 0,
-      "in Json::Value::operator[](int index): index cannot be negative");
+      "in Futures::Json::Value::operator[](int index): index cannot be negative");
   return (*this)[ArrayIndex(index)];
 }
 
 const Value& Value::operator[](ArrayIndex index) const {
   JSON_ASSERT_MESSAGE(
       type() == nullValue || type() == arrayValue,
-      "in Json::Value::operator[](ArrayIndex)const: requires arrayValue");
+      "in Futures::Json::Value::operator[](ArrayIndex)const: requires arrayValue");
   if (type() == nullValue)
     return nullSingleton();
   CZString key(index);
@@ -961,7 +1060,7 @@ const Value& Value::operator[](ArrayIndex index) const {
 const Value& Value::operator[](int index) const {
   JSON_ASSERT_MESSAGE(
       index >= 0,
-      "in Json::Value::operator[](int index) const: index cannot be negative");
+      "in Futures::Json::Value::operator[](int index) const: index cannot be negative");
   return (*this)[ArrayIndex(index)];
 }
 
@@ -1038,7 +1137,7 @@ void Value::dupMeta(const Value& other) {
 Value& Value::resolveReference(const char* key) {
   JSON_ASSERT_MESSAGE(
       type() == nullValue || type() == objectValue,
-      "in Json::Value::resolveReference(): requires objectValue");
+      "in Futures::Json::Value::resolveReference(): requires objectValue");
   if (type() == nullValue)
     *this = Value(objectValue);
   CZString actualKey(key, static_cast<unsigned>(strlen(key)),
@@ -1057,7 +1156,7 @@ Value& Value::resolveReference(const char* key) {
 Value& Value::resolveReference(char const* key, char const* end) {
   JSON_ASSERT_MESSAGE(
       type() == nullValue || type() == objectValue,
-      "in Json::Value::resolveReference(key, end): requires objectValue");
+      "in Futures::Json::Value::resolveReference(key, end): requires objectValue");
   if (type() == nullValue)
     *this = Value(objectValue);
   CZString actualKey(key, static_cast<unsigned>(end - key),
@@ -1081,7 +1180,7 @@ bool Value::isValidIndex(ArrayIndex index) const { return index < size(); }
 
 Value const* Value::find(char const* begin, char const* end) const {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == objectValue,
-                      "in Json::Value::find(begin, end): requires "
+                      "in Futures::Json::Value::find(begin, end): requires "
                       "objectValue or nullValue");
   if (type() == nullValue)
     return nullptr;
@@ -1094,7 +1193,7 @@ Value const* Value::find(char const* begin, char const* end) const {
 }
 Value* Value::demand(char const* begin, char const* end) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == objectValue,
-                      "in Json::Value::demand(begin, end): requires "
+                      "in Futures::Json::Value::demand(begin, end): requires "
                       "objectValue or nullValue");
   return &resolveReference(begin, end);
 }
@@ -1127,7 +1226,7 @@ Value& Value::append(const Value& value) { return append(Value(value)); }
 
 Value& Value::append(Value&& value) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == arrayValue,
-                      "in Json::Value::append: requires arrayValue");
+                      "in Futures::Json::Value::append: requires arrayValue");
   if (type() == nullValue) {
     *this = Value(arrayValue);
   }
@@ -1140,7 +1239,7 @@ bool Value::insert(ArrayIndex index, const Value& newValue) {
 
 bool Value::insert(ArrayIndex index, Value&& newValue) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == arrayValue,
-                      "in Json::Value::insert: requires arrayValue");
+                      "in Futures::Json::Value::insert: requires arrayValue");
   ArrayIndex length = size();
   if (index > length) {
     return false;
@@ -1164,6 +1263,100 @@ Value Value::get(String const& key, Value const& defaultValue) const {
   return get(key.data(), key.data() + key.length(), defaultValue);
 }
 
+bool Value::getBool(const char *key, const bool &defaultValue) const {
+  return get(key, defaultValue).asBool();
+}
+
+std::string Value::getString(const char *key, const Value &defaultValue) const {
+  const Value value = get(key, defaultValue);
+  std::string tmp;
+  if (value.isObject() || value.isArray()) {
+    tmp = value.toFastString();
+  } else {
+    tmp = value.asString();
+  }
+  if (tmp.empty()) {
+    tmp = defaultValue.asString();
+  }
+  return tmp;
+}
+
+double Value::getDouble(const char *key, const double &defaultValue) const {
+  const Value value = get(key, defaultValue);
+  if (value.isNumeric()) {
+    return value.asDouble();
+  }
+  if (value.isString()) {
+    try {
+      return value.asDouble();
+    }
+    catch (const std::exception &e) {
+    }
+  }
+  return defaultValue;
+}
+
+int Value::getInt(const char *key, const Value::Int &defaultValue) const {
+  const Value value = get(key, defaultValue);
+  if (value.isNumeric()) {
+    return value.asInt();
+  }
+  if (value.isString()) {
+    try {
+      return value.asInt();
+    }
+    catch (const std::exception &e) {
+    }
+  }
+  return defaultValue;
+}
+
+unsigned int Value::getUInt(const char *key, const Value::UInt &defaultValue) const {
+  const Value value = get(key, defaultValue);
+  if (value.isNumeric()) {
+    return value.asUInt();
+  }
+  if (value.isString()) {
+    try {
+      return value.asUInt();
+    }
+    catch (const std::exception &e) {
+    }
+  }
+  return defaultValue;
+}
+
+uint64_t Value::getUInt64(const char *key, const Value::UInt64 &defaultValue) const {
+  const Value value = get(key, defaultValue);
+  if (value.isNumeric()) {
+    return value.asUInt64();
+  }
+  if (value.isString()) {
+    try {
+      return value.asUInt64();
+    }
+    catch (const std::exception &e) {
+    }
+  }
+  return defaultValue;
+}
+
+int64_t Value::getInt64(const char *key, const Value::Int64 &defaultValue) const {
+  const Value value = get(key, defaultValue);
+  if (value.isNumeric()) {
+    return value.asInt64();
+  }
+  if (value.isString()) {
+    try {
+      return value.asInt64();
+    }
+    catch (const std::exception &e) {
+    }
+  }
+  return defaultValue;
+}
+
+
 bool Value::removeMember(const char* begin, const char* end, Value* removed) {
   if (type() != objectValue) {
     return false;
@@ -1186,7 +1379,7 @@ bool Value::removeMember(String const& key, Value* removed) {
 }
 void Value::removeMember(const char* key) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == objectValue,
-                      "in Json::Value::removeMember(): requires objectValue");
+                      "in Futures::Json::Value::removeMember(): requires objectValue");
   if (type() == nullValue)
     return;
 
@@ -1233,7 +1426,7 @@ bool Value::isMember(String const& key) const {
 Value::Members Value::getMemberNames() const {
   JSON_ASSERT_MESSAGE(
       type() == nullValue || type() == objectValue,
-      "in Json::Value::getMemberNames(), value must be objectValue");
+      "in Futures::Json::Value::getMemberNames(), value must be objectValue");
   if (type() == nullValue)
     return Value::Members();
   Members members;
@@ -1413,7 +1606,7 @@ void Value::setComment(String comment, CommentPlacement placement) {
   JSON_ASSERT(!comment.empty());
   JSON_ASSERT_MESSAGE(
       comment[0] == '\0' || comment[0] == '/',
-      "in Json::Value::setComment(): Comments must start with /");
+      "in Futures::Json::Value::setComment(): Comments must start with /");
   comments_.set(placement, std::move(comment));
 }
 
@@ -1437,11 +1630,38 @@ String Value::toStyledString() const {
   StreamWriterBuilder builder;
 
   String out = this->hasComment(commentBefore) ? "\n" : "";
-  out += Json::writeString(builder, *this);
+  out += Futures::Json::writeString(builder, *this);
   out += '\n';
 
   return out;
 }
+
+std::string
+Value::toFastString() const
+{
+//  (*settings)["commentStyle"] = "All";
+//  (*settings)["indentation"] = "\t";
+//  (*settings)["enableYAMLCompatibility"] = false;
+//  (*settings)["dropNullPlaceholders"] = false;
+//  (*settings)["useSpecialFloats"] = false;
+//  (*settings)["emitUTF8"] = false;
+//  (*settings)["precision"] = 17;
+//  (*settings)["precisionType"] = "significant";
+  StreamWriterBuilder builder;
+  builder.settings_["commentStyle"] = "None"; // 不输出注释
+  builder.settings_["indentation"] = ""; // 格式
+  builder.settings_["enableYAMLCompatibility"] = false;
+  builder.settings_["dropNullPlaceholders"] = true; // 不输出null
+  builder.settings_["useSpecialFloats"] = false; // 特殊数字输出
+  builder.settings_["emitUTF8"] = true; // 使用utf8输出
+  builder.settings_["precision"] = 17; // 小数精度
+  builder.settings_["precisionType"] = "decimal"; // 精度类型
+
+  String out = this->hasComment(commentBefore) ? "\n" : "";
+  out += Futures::Json::writeString(builder, *this);
+  return out;
+}
+
 
 Value::const_iterator Value::begin() const {
   switch (type()) {
@@ -1632,3 +1852,4 @@ Value& Path::make(Value& root) const {
 }
 
 } // namespace Json
+}

@@ -23,6 +23,7 @@
 #pragma pack(push)
 #pragma pack()
 
+namespace Futures{
 namespace Json {
 
 class Value;
@@ -81,7 +82,7 @@ String JSON_API writeString(StreamWriter::Factory const& factory,
 *   StreamWriterBuilder builder;
 *   builder["commentStyle"] = "None";
 *   builder["indentation"] = "   ";  // or whatever you like
-*   std::unique_ptr<Json::StreamWriter> writer(
+*   std::unique_ptr<Futures::Json::StreamWriter> writer(
 *      builder.newStreamWriter());
 *   writer->write(value, &std::cout);
 *   std::cout << std::endl;  // add lf and flush
@@ -89,7 +90,7 @@ String JSON_API writeString(StreamWriter::Factory const& factory,
 */
 class JSON_API StreamWriterBuilder : public StreamWriter::Factory {
 public:
-  // Note: We use a Json::Value so that we can add data-members to this class
+  // Note: We use a Futures::Json::Value so that we can add data-members to this class
   // without a major version bump.
   /** Configuration of this builder.
    *  Available settings (case-sensitive):
@@ -119,7 +120,7 @@ public:
    *  JSON Value.
    *  \sa setDefaults()
    */
-  Json::Value settings_;
+  Futures::Json::Value settings_;
 
   StreamWriterBuilder();
   ~StreamWriterBuilder() override;
@@ -132,17 +133,17 @@ public:
   /** \return true if 'settings' are legal and consistent;
    *   otherwise, indicate bad settings via 'invalid'.
    */
-  bool validate(Json::Value* invalid) const;
+  bool validate(Futures::Json::Value* invalid) const;
   /** A simple way to update a specific setting.
    */
   Value& operator[](const String& key);
 
   /** Called by ctor, but you can use this to reset settings_.
-   * \pre 'settings' != NULL (but Json::null is fine)
+   * \pre 'settings' != NULL (but Futures::Json::null is fine)
    * \remark Defaults:
    * \snippet src/lib_json/json_writer.cpp StreamWriterBuilderDefaults
    */
-  static void setDefaults(Json::Value* settings);
+  static void setDefaults(Futures::Json::Value* settings);
 };
 
 /** \brief Abstract class for writers.
@@ -356,11 +357,11 @@ String JSON_API valueToString(bool value);
 String JSON_API valueToQuotedString(const char* value);
 
 /// \brief Output using the StyledStreamWriter.
-/// \see Json::operator>>()
+/// \see Futures::Json::operator>>()
 JSON_API OStream& operator<<(OStream&, const Value& root);
 
 } // namespace Json
-
+}
 #pragma pack(pop)
 
 #if defined(JSONCPP_DISABLE_DLL_INTERFACE_WARNING)

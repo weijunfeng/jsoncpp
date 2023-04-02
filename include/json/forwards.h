@@ -9,7 +9,7 @@
 #if !defined(JSON_IS_AMALGAMATION)
 #include "config.h"
 #endif // if !defined(JSON_IS_AMALGAMATION)
-
+namespace Futures{
 namespace Json {
 
 // writer.h
@@ -39,5 +39,5 @@ class ValueIterator;
 class ValueConstIterator;
 
 } // namespace Json
-
+}
 #endif // JSON_FORWARDS_H_INCLUDED

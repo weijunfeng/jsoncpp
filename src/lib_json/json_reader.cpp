@@ -50,7 +50,7 @@
 
 static size_t const stackLimit_g =
     JSONCPP_DEPRECATED_STACK_LIMIT; // see readValue()
-
+namespace Futures{
 namespace Json {
 
 #if __cplusplus >= 201103L || (defined(_CPPLIB_VER) && _CPPLIB_VER >= 520)
@@ -75,6 +75,15 @@ Features Features::strictMode() {
   return features;
 }
 
+Features Features::myMode() {
+  Features features;
+  features.allowComments_ = false;// 不允许注释
+  features.strictRoot_ = false; // 根不是必须[]或{}
+  features.allowDroppedNullPlaceholders_ = true; // 删除null值
+  features.allowNumericKeys_ = false;
+  return features;
+}
+
 // Implementation of class Reader
 // ////////////////////////////////
 
@@ -85,7 +94,7 @@ bool Reader::containsNewLine(Reader::Location begin, Reader::Location end) {
 // Class Reader
 // //////////////////////////////////////////////////////////////////
 
-Reader::Reader() : features_(Features::all()) {}
+Reader::Reader() : features_(Features::myMode()) {}
 
 Reader::Reader(const Features& features) : features_(features) {}
 
@@ -1912,7 +1921,7 @@ CharReader* CharReaderBuilder::newCharReader() const {
   return new OurCharReader(collectComments, features);
 }
 
-bool CharReaderBuilder::validate(Json::Value* invalid) const {
+bool CharReaderBuilder::validate(Futures::Json::Value* invalid) const {
   static const auto& valid_keys = *new std::set<String>{
       "collectComments",
       "allowComments",
@@ -1943,7 +1952,7 @@ Value& CharReaderBuilder::operator[](const String& key) {
   return settings_[key];
 }
 // static
-void CharReaderBuilder::strictMode(Json::Value* settings) {
+void CharReaderBuilder::strictMode(Futures::Json::Value* settings) {
   //! [CharReaderBuilderStrictMode]
   (*settings)["allowComments"] = false;
   (*settings)["allowTrailingCommas"] = false;
@@ -1959,7 +1968,7 @@ void CharReaderBuilder::strictMode(Json::Value* settings) {
   //! [CharReaderBuilderStrictMode]
 }
 // static
-void CharReaderBuilder::setDefaults(Json::Value* settings) {
+void CharReaderBuilder::setDefaults(Futures::Json::Value* settings) {
   //! [CharReaderBuilderDefaults]
   (*settings)["collectComments"] = true;
   (*settings)["allowComments"] = true;
@@ -2002,3 +2011,4 @@ IStream& operator>>(IStream& sin, Value& root) {
 }
 
 } // namespace Json
+}

@@ -4,7 +4,7 @@
 // See file LICENSE for detail or copy at http://jsoncpp.sourceforge.net/LICENSE
 
 // included by json_value.cpp
-
+namespace Futures{
 namespace Json {
 
 // //////////////////////////////////////////////////////////////////
@@ -154,3 +154,4 @@ ValueIterator& ValueIterator::operator=(const SelfType& other) {
 }
 
 } // namespace Json
+}

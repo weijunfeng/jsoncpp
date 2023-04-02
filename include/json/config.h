@@ -103,7 +103,7 @@ extern JSON_API int msvc_pre1900_c99_snprintf(char* outBuf, size_t size,
 #include "version.h"
 
 #endif // if !defined(JSON_IS_AMALGAMATION)
-
+namespace Futures{
 namespace Json {
 using Int = int;
 using UInt = unsigned int;
@@ -131,20 +131,21 @@ using Allocator =
                               std::allocator<T>>::type;
 using String = std::basic_string<char, std::char_traits<char>, Allocator<char>>;
 using IStringStream =
-    std::basic_istringstream<String::value_type, String::traits_type,
+    std::basic_stringstream<String::value_type, String::traits_type,
                              String::allocator_type>;
 using OStringStream =
-    std::basic_ostringstream<String::value_type, String::traits_type,
+    std::basic_stringstream<String::value_type, String::traits_type,
                              String::allocator_type>;
 using IStream = std::istream;
 using OStream = std::ostream;
 } // namespace Json
+}
 
 // Legacy names (formerly macros).
-using JSONCPP_STRING = Json::String;
-using JSONCPP_ISTRINGSTREAM = Json::IStringStream;
-using JSONCPP_OSTRINGSTREAM = Json::OStringStream;
-using JSONCPP_ISTREAM = Json::IStream;
-using JSONCPP_OSTREAM = Json::OStream;
+using JSONCPP_STRING = Futures::Json::String;
+using JSONCPP_ISTRINGSTREAM = Futures::Json::IStringStream;
+using JSONCPP_OSTRINGSTREAM = Futures::Json::OStringStream;
+using JSONCPP_ISTREAM = Futures::Json::IStream;
+using JSONCPP_OSTREAM = Futures::Json::OStream;
 
 #endif // JSON_CONFIG_H_INCLUDED
